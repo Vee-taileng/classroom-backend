@@ -7,10 +7,10 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { search, deppartment, page = 1, limit = 10 } = req.query;
+    const { search, departments, page = 1, limit = 10 } = req.query;
 
-    const currentPage = Math.max(1, +page);
-    const limitPerPage = Math.max(1, +limit);
+    const currentPage = Math.max(1, Number(page) || 1);
+    const limitPerPage = Math.max(1, Number(limit) || 10);
 
     const offset = (currentPage - 1) * limitPerPage;
 
@@ -27,9 +27,9 @@ router.get("/", async (req, res) => {
     }
 
     // If department query exists, filter by department name
-    if (deppartment) {
+    if (departments) {
       filterConditions.push(
-        ilike(department.name, `%${deppartment}%`)
+        ilike(department.name, `%${departments}%`)
       );
     }
 
@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
       .leftJoin(department, eq(subjects.department_id, department.id))
       .where(whereClause);
 
-      const totalCount = countResult[0]?.count ?? 0;
+      const totalCount = Number(countResult[0]?.count ?? 0);
 
       const subjectList = await db
       .select({
@@ -52,7 +52,7 @@ router.get("/", async (req, res) => {
       .from(subjects)
       .leftJoin(department, eq(subjects.department_id, department.id))
       .where(whereClause)
-      .orderBy(subjects.created_at)
+      .orderBy(sql`${subjects.created_at} DESC`)
       .limit(limitPerPage)
       .offset(offset);
 
